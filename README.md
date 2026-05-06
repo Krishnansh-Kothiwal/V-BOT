@@ -2,7 +2,7 @@
 
 A **fully local, fully free** voice assistant that runs entirely on your machine — no cloud APIs, no data collection, no subscriptions.
 
-**Pipeline:** Upload Audio → Whisper STT → Ollama LLM → Piper TTS → Play Audio
+**Pipeline:** Upload Audio → Whisper STT → Ollama LLM → pyttsx3 TTS → Play Audio
 
 ---
 
@@ -12,7 +12,7 @@ A **fully local, fully free** voice assistant that runs entirely on your machine
 |-----------|-----------|---------|
 | **STT** | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Speech-to-text (base model, CPU, int8) |
 | **LLM** | [Ollama](https://ollama.com/) + `qwen2.5:7b` | Local language model inference |
-| **TTS** | [Piper](https://github.com/rhasspy/piper) | Text-to-speech (`en_US-lessac-medium`) |
+| **TTS** | [pyttsx3](https://github.com/nateshmbhat/pyttsx3) | Text-to-speech (Native Windows SAPI) |
 | **UI** | [Streamlit](https://streamlit.io/) | Web interface |
 
 ---
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-> **Note:** On first run, the Piper voice model (~75 MB) will be auto-downloaded from HuggingFace into a `voices/` directory. This is a one-time download.
+> **Note:** The assistant uses your system's native voices via SAPI5. No extra downloads are required for speech synthesis.
 
 ---
 
@@ -60,10 +60,10 @@ Proj3/
 ├── app.py              # Streamlit UI — ties the pipeline together
 ├── stt.py              # Speech-to-Text (faster-whisper)
 ├── llm.py              # LLM call (Ollama / qwen2.5:7b)
-├── tts.py              # Text-to-Speech (Piper)
+├── tts.py              # Text-to-Speech (pyttsx3)
 ├── requirements.txt    # Python dependencies
 ├── README.md           # This file
-└── voices/             # Auto-created — Piper voice models
+└── tmp/                # Auto-created — Temporary audio storage
 ```
 
 ---
@@ -73,7 +73,7 @@ Proj3/
 1. **Upload** a `.wav`, `.mp3`, `.ogg`, `.flac`, `.m4a`, or `.webm` audio file
 2. **Transcription** — faster-whisper converts speech to text on CPU
 3. **LLM Response** — the transcript is sent to Ollama (`qwen2.5:7b`) running locally
-4. **Speech Synthesis** — Piper converts the LLM response back to audio
+4. **Speech Synthesis** — pyttsx3 converts the LLM response back to audio using native system voices
 5. **Playback** — the synthesized audio plays directly in the browser
 
 ---
@@ -84,7 +84,7 @@ Proj3/
 - **No streaming** — simpler pipeline, easier to debug
 - **No agents/tools** — direct prompt → response, no unnecessary abstractions
 - **CPU inference** — works on any machine without a GPU (slower but universal)
-- **Auto-download** — Piper voice model is fetched automatically on first run
+- **Native TTS** — Uses system voices to avoid large model downloads and maintain speed
 
 ---
 

@@ -1,7 +1,7 @@
 """
 app.py — Offline Voice Assistant (Streamlit UI)
 
-Pipeline: Upload Audio → Whisper STT → Ollama LLM → Piper TTS → Play Audio
+Pipeline: Upload Audio → Whisper STT → Ollama LLM → pyttsx3 TTS → Play Audio
 """
 
 import tempfile
@@ -117,7 +117,7 @@ st.markdown("""
 # ─── Header ────────────────────────────────────────────────────
 st.markdown('<h1 class="hero-title">🎙️ Offline Voice Assistant</h1>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="hero-sub">Upload audio → Whisper → Ollama (qwen2.5:7b) → Piper TTS</p>',
+    '<p class="hero-sub">Upload audio → Whisper → Ollama (qwen2.5:7b) → pyttsx3 TTS</p>',
     unsafe_allow_html=True,
 )
 
@@ -127,7 +127,7 @@ with st.expander("⚙️ Stack Details", expanded=False):
     stack = [
         ("🗣️ STT", "faster-whisper (base)"),
         ("🧠 LLM", "Ollama · qwen2.5:7b"),
-        ("🔊 TTS", "Piper · lessac-medium"),
+        ("🔊 TTS", "pyttsx3 · SAPI5"),
         ("🖥️ UI", "Streamlit"),
     ]
     for col, (label, desc) in zip(cols, stack):
@@ -179,7 +179,7 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
         # ── Step 3: Text-to-Speech ─────────────────────────────
-        with st.status("🔊 Synthesizing speech with Piper...", expanded=True) as status:
+        with st.status("🔊 Synthesizing speech...", expanded=True) as status:
             # Truncate very long responses to keep TTS fast
             tts_text = answer[:2000] if len(answer) > 2000 else answer
             audio_bytes = synthesize(tts_text)
