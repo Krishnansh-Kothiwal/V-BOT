@@ -28,7 +28,7 @@ Local speech transcription with cloud-based response generation and TTS.
 
 ```bash
 # 1. Clone / navigate to the project
-cd Proj3
+cd V-BOT-main
 
 # 2. Create a virtual environment
 python -m venv venv
@@ -49,7 +49,7 @@ Provide your Gemini API key in a `.env` file as `GEMINI_API_KEY`.
 ## Project Structure
 
 ```
-Proj3/
+V-BOT-main/
 ├── app.py              # Streamlit UI — ties the pipeline together
 ├── stt.py              # Speech-to-Text (faster-whisper)
 ├── llm.py              # LLM interface (Gemini 3.1 Flash Lite)

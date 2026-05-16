@@ -1,10 +1,11 @@
 """
 app.py — Offline Voice Assistant (Streamlit UI)
 
-Pipeline: Upload Audio → Whisper STT → Ollama LLM → pyttsx3 TTS → Play Audio
+Pipeline: Upload Audio → Whisper STT → Gemini API LLM → gTTS TTS → Play Audio
 """
 
 import os
+import html
 import tempfile
 from pathlib import Path
 
@@ -182,20 +183,26 @@ if uploaded_file is not None:
             st.stop()
 
         # ── Step 1: Transcription ──────────────────────────────
-        with st.status("🎧 Transcribing audio...", expanded=True) as status:
-            # Save uploaded file to a temp path for faster-whisper
-            suffix = Path(uploaded_file.name).suffix
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(uploaded_file.getvalue())
-                tmp_path = tmp.name
+        tmp_path = None
+        try:
+            with st.status("🎧 Transcribing audio...", expanded=True) as status:
+                # Save uploaded file to a temp path for faster-whisper
+                suffix = Path(uploaded_file.name).suffix
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    tmp.write(uploaded_file.getvalue())
+                    tmp_path = tmp.name
 
-            transcript = transcribe(tmp_path)
-            status.update(label="✅ Transcription complete", state="complete")
+                transcript = transcribe(tmp_path)
+                status.update(label="✅ Transcription complete", state="complete")
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
 
+        safe_transcript = html.escape(transcript)
         st.markdown(f"""
         <div class="step-card">
             <h4>📝 Transcription <span class="badge badge-ok">DONE</span></h4>
-            <p>{transcript}</p>
+            <p>{safe_transcript}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -204,10 +211,11 @@ if uploaded_file is not None:
             answer = generate_response(transcript, api_key)
             status.update(label="✅ LLM response ready", state="complete")
 
+        safe_answer = html.escape(answer)
         st.markdown(f"""
         <div class="step-card">
             <h4>💬 Assistant Response <span class="badge badge-ok">DONE</span></h4>
-            <p>{answer}</p>
+            <p>{safe_answer}</p>
         </div>
         """, unsafe_allow_html=True)
 
