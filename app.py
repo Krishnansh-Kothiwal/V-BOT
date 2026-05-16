@@ -4,8 +4,12 @@ app.py — Offline Voice Assistant (Streamlit UI)
 Pipeline: Upload Audio → Whisper STT → Ollama LLM → pyttsx3 TTS → Play Audio
 """
 
+import os
 import tempfile
 from pathlib import Path
+
+from dotenv import load_dotenv
+load_dotenv()
 
 import streamlit as st
 
@@ -23,101 +27,125 @@ st.set_page_config(
 # ─── Custom Styling ────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
+        color: #B8E3E9; /* Light teal for main text */
     }
 
     .stApp {
-        background: linear-gradient(135deg, #000000 0%, #0C1821 50%, #1B2A41 100%);
+        background: #0B2E33; /* Dark Teal Background */
     }
 
-    /* Header */
+    /* Header Section */
     .hero-title {
         text-align: center;
-        font-size: 2.6rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #CCC9DC, #324A5F);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0;
+        font-size: 3rem;
+        font-weight: 800;
+        color: #B8E3E9;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
     .hero-sub {
         text-align: center;
-        color: #CCC9DC;
-        font-size: 1.05rem;
+        color: #93B1B5; /* Muted teal-gray */
+        font-size: 1.1rem;
+        font-weight: 500;
         margin-top: 0;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
 
-    /* Pipeline step cards */
+    /* Step Cards */
     .step-card {
-        background: rgba(27, 42, 65, 0.4);
-        border: 1px solid rgba(50, 74, 95, 0.5);
+        background: #153D42; /* Slightly lighter teal */
+        border: 1px solid #4F7C82;
         border-radius: 12px;
-        padding: 1.2rem 1.4rem;
-        margin-bottom: 1rem;
-        backdrop-filter: blur(8px);
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
     .step-card h4 {
-        margin: 0 0 0.4rem 0;
-        color: #CCC9DC;
-        font-size: 0.95rem;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+        margin: 0 0 0.75rem 0;
+        color: #B8E3E9;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
     }
-    .step-card p, .step-card div {
-        color: #ccd6f6;
-        font-size: 0.92rem;
+    .step-card p {
+        color: #93B1B5;
+        font-size: 1rem;
         line-height: 1.6;
     }
 
-    /* Status badges */
+    /* Status Badges */
     .badge {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 12px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        margin-left: 10px;
+        background: #B8E3E9;
+        color: #0B2E33;
+        vertical-align: middle;
     }
-    .badge-ok   { background: #324A5F; color: #CCC9DC; }
-    .badge-wait { background: #0C1821; color: #1B2A41; }
 
-    /* Buttons */
+    /* File Uploader */
+    [data-testid="stFileUploader"] {
+        background: #153D42;
+        border: 1px dashed #4F7C82;
+        border-radius: 12px;
+        padding: 2rem;
+    }
+
+    /* Button Styling */
     .stButton>button {
-        background-color: #324A5F !important;
-        color: #CCC9DC !important;
-        border: 1px solid #CCC9DC !important;
+        background: #4F7C82 !important;
+        color: #B8E3E9 !important;
+        border: 1px solid #B8E3E9 !important;
+        padding: 0.6rem 2rem !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        width: 100%;
+        transition: all 0.3s ease;
     }
-
-    /* Divider */
-    hr { border-color: rgba(204, 201, 220, 0.1); }
+    .stButton>button:hover {
+        background: #B8E3E9 !important;
+        color: #0B2E33 !important;
+        transform: translateY(-2px);
+    }
 
     /* Footer */
     .footer {
         text-align: center;
-        color: #324A5F;
-        font-size: 0.78rem;
-        margin-top: 3rem;
-        padding-bottom: 1rem;
+        color: #93B1B5;
+        font-size: 0.8rem;
+        margin-top: 4rem;
+        padding: 2rem 0;
+        border-top: 1px solid #4F7C82;
     }
 
-    /* File uploader tweaks */
-    [data-testid="stFileUploader"] {
-        background: rgba(255,255,255,0.03);
-        border: 1px dashed rgba(255,255,255,0.12);
-        border-radius: 12px;
-        padding: 1rem;
+    /* Streamlit Status Widget */
+    .stStatusWidget {
+        background-color: #153D42 !important;
+        border: 1px solid #4F7C82 !important;
     }
+    hr { border-color: #4F7C82; }
 </style>
 """, unsafe_allow_html=True)
 
+# Fetch API key directly from environment variables / .env
+api_key = os.environ.get("GEMINI_API_KEY", "")
+
 # ─── Header ────────────────────────────────────────────────────
-st.markdown('<h1 class="hero-title">🎙️ Offline Voice Assistant</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="hero-title">🎙️ Voice Assistant</h1>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="hero-sub">Upload audio → Whisper → Ollama (qwen2.5:7b) → pyttsx3 TTS</p>',
+    '<p class="hero-sub">Upload audio → Whisper → Gemini 3.1 Flash Lite → gTTS</p>',
     unsafe_allow_html=True,
 )
 
@@ -126,8 +154,8 @@ with st.expander("⚙️ Stack Details", expanded=False):
     cols = st.columns(4)
     stack = [
         ("🗣️ STT", "faster-whisper (base)"),
-        ("🧠 LLM", "Ollama · qwen2.5:7b"),
-        ("🔊 TTS", "pyttsx3 · SAPI5"),
+        ("🧠 LLM", "Gemini 3.1 Flash Lite"),
+        ("🔊 TTS", "gTTS · Google TTS"),
         ("🖥️ UI", "Streamlit"),
     ]
     for col, (label, desc) in zip(cols, stack):
@@ -148,6 +176,11 @@ if uploaded_file is not None:
 
     if st.button("🚀 Process Audio", use_container_width=True, type="primary"):
 
+        # Guard: require API key before processing
+        if not api_key:
+            st.error("⚠️ API Key missing! Please set GEMINI_API_KEY in your .env file.")
+            st.stop()
+
         # ── Step 1: Transcription ──────────────────────────────
         with st.status("🎧 Transcribing audio...", expanded=True) as status:
             # Save uploaded file to a temp path for faster-whisper
@@ -167,8 +200,8 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
         # ── Step 2: LLM Response ───────────────────────────────
-        with st.status("🧠 Generating response with qwen2.5:7b...", expanded=True) as status:
-            answer = generate_response(transcript)
+        with st.status("🧠 Generating response with Gemini 3.1 Flash Lite...", expanded=True) as status:
+            answer = generate_response(transcript, api_key)
             status.update(label="✅ LLM response ready", state="complete")
 
         st.markdown(f"""
@@ -191,24 +224,22 @@ if uploaded_file is not None:
         </div>
         """, unsafe_allow_html=True)
 
-        st.audio(audio_bytes, format="audio/wav")
+        st.audio(audio_bytes, format="audio/mp3")
 
         # ── Pipeline Summary ───────────────────────────────────
-        st.success("✅ Full pipeline complete — 100% offline, 100% free.")
+        st.success("✅ Full pipeline complete.")
 
 else:
     st.markdown("""
     <div class="step-card">
         <h4>👆 Upload an audio file to get started</h4>
-        <p>Record a question on your phone or computer, then upload the file here.
-        The entire pipeline runs locally on your machine — no data leaves your computer.</p>
+        <p>Record a question on your phone or computer, then upload the file here.</p>
     </div>
     """, unsafe_allow_html=True)
 
 # ─── Footer ────────────────────────────────────────────────────
 st.markdown("""
 <div class="footer">
-    Powered by faster-whisper · Ollama · Piper TTS · Streamlit<br>
-    No cloud APIs · No data collection · Fully offline
+    Powered by faster-whisper · Gemini 3.1 Flash Lite · gTTS · Streamlit
 </div>
 """, unsafe_allow_html=True)

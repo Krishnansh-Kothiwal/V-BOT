@@ -1,18 +1,25 @@
 """
-llm.py — Local LLM interface via Ollama (qwen2.5:7b)
+llm.py — Cloud LLM interface via Gemini API (gemini-3.1-flash-lite)
 """
 
-import requests
+from google import genai
+from google.genai import types
 
+SYSTEM_INSTRUCTION = (
+    "You are a helpful voice assistant. "
+    "Always respond in plain text only. "
+    "Do not use any markdown formatting such as asterisks, bold, italics, "
+    "bullet points, headers, or backticks. Write as if speaking naturally."
+)
 
-def generate_response(prompt: str) -> str:
-    """Send a prompt to the local Ollama server and return the response."""
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "qwen2.5:7b",
-            "prompt": prompt,
-            "stream": False
-        }
+def generate_response(prompt: str, api_key: str) -> str:
+    """Send a prompt to the Gemini API and return the response text."""
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-3.1-flash-lite",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_INSTRUCTION,
+        ),
     )
-    return response.json()["response"]
+    return response.text
